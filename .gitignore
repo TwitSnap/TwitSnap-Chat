@@ -1,0 +1,6 @@
+.venv
+.env
+.idea
+chat_ms.log
+__pycache__
+test_main.http
