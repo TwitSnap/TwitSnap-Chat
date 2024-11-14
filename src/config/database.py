@@ -1,6 +1,5 @@
 from config.settings import logger
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
+from motor.motor_asyncio import AsyncIOMotorClient
 from config.settings import DB_URI, DB_NAME
 
 
@@ -12,20 +11,25 @@ class Database:
         self.db = None
 
     def connect(self):
-        self.client = MongoClient(DB_URI, server_api=ServerApi('1'))
-        self.db = self.client[self.db_name]
+        self.client = AsyncIOMotorClient(DB_URI)
+        self.db = self.client.get_database(DB_NAME)
         try:
-            self.client.admin.command('ping')
+            self.client.admin.command("ping")
             logger.info(f"Database connection established successfully at {self.uri}")
         except Exception as e:
             print(e)
 
     def get_db(self):
+        if self.db is None:
+            logger.error("Database is not connected")
+            return None
         return self.db
 
-    async def disconnect(self):
+    def disconnect(self):
         if self.client:
             self.client.close()
             logger.info("MongoDB connection closed")
 
+
 db = Database(DB_URI, DB_NAME)
+db.connect()
