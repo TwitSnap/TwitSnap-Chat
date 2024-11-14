@@ -1,10 +1,12 @@
 from fastapi import FastAPI
 from routes.routes import router
 from config.open_api_doc import configure_openapi
+from config.middleware import configure_middleware
 
 app = FastAPI()
 app.include_router(router)
 configure_openapi(app)
+configure_middleware(app)
 
 # TODO:
 # - 3 implementar un endpoint para obtener chat por id
