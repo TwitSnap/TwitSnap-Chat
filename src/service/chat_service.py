@@ -70,5 +70,39 @@ class ChatService:
                 # logger.debug(f"Sending message to user {user_id}, message: {message}")
                 await websocket.send_json(message)
 
+    async def _get_chat_by_id(self, chat_id: str):
+        chat = await self.chat_repository.get_chat_by_id(chat_id)
+        if chat is None:
+            raise ResourceNotFoundException("Chat not found")
+        return chat
+
+    async def get_chat_by_id(self, chat_id: str):
+        chat = await self.chat_repository.get_chat_by_id(chat_id)
+        msg = await self.chat_repository.get_chat_messages(chat_id)
+        res = {"chat_id": chat_id, "messages": msg}
+        logger.debug(f"returning chat: {res}")
+        return res
+
+    async def get_my_chats(self, user_id: str):
+        res = {"chats": []}
+        chats = await self.chat_repository.get_my_chats(user_id)
+
+        for chat in chats:
+            chat["chat_id"] = str(chat.get("_id"))
+            chat["participants"].remove(user_id)
+            # user = await self.twitsnap_service.get_user(chat.get("participants")[0])
+            last_message = await self.chat_repository.get_message_by_id(
+                chat.get("last_message")
+            )
+            res["chats"].append(
+                {
+                    "chat_id": str(chat.get("_id")),
+                    # "user": user,
+                    "last_message": last_message,
+                }
+            )
+        logger.debug(f"returning chats: {res}")
+        return res
+
 
 chat_service = ChatService(chat_repository, twitsnap_service)

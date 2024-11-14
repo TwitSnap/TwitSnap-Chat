@@ -27,6 +27,39 @@ class ChatRepository:
         return await self.chat_collection.update_one(
             {"_id": ObjectId(chat_id)}, {"$set": {"last_message": ObjectId(message_id)}}
         )
+    async def get_chat_by_participants(self, uid_1: str, uid_2: str):
+        return await self.chat_collection.find_one(
+            {"participants": {"$all": [uid_1, uid_2]}}
+        )
+
+    async def get_my_chats(self, uid: str):
+        return await self.chat_collection.find(
+            {"participants": {"$in": [uid]}, "messages": {"$ne": []}}
+        ).to_list(length=100)
+
+    async def get_chat_messages(self, chat_id: str) -> List[dict]:
+        chat = await self.chat_collection.find_one({"_id": ObjectId(chat_id)})
+
+        if not chat:
+            logger.debug("Chat not found")
+            return []
+
+        chat_id = chat.get("_id")
+        logger.debug(f"Chat id: {chat_id}")
+
+        messages = await self.message_collection.find(
+            {"chat_id": str(chat_id)}, {"_id": 0}
+        ).to_list(length=100)
+        return messages
+
+    async def get_chat_by_id(self, chat_id: str):
+        return await self.chat_collection.find_one({"_id": ObjectId(chat_id)})
+
+    async def get_message_by_id(self, message_id: str):
+        return await self.message_collection.find_one(
+            {"_id": ObjectId(message_id)},
+            {"_id": 0, "chat_id": 0},
+        )
 
 
 chat_repository = ChatRepository(db.get_db())
