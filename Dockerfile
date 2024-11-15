@@ -12,4 +12,4 @@ WORKDIR /app/src
 
 EXPOSE $PORT
 
-CMD ["uvicorn", "main:app"]
+CMD ["python3", "main.py"]

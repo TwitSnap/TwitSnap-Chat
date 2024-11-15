@@ -4,6 +4,8 @@ import os
 
 
 load_dotenv()
+HOST = os.getenv("HOST")
+PORT = os.getenv("PORT")
 DB_URI = os.getenv("DB_URI")
 LOG_LEVEL = os.getenv("LOG_LEVEL")
 LOG_PATH = os.getenv("LOG_PATH")
