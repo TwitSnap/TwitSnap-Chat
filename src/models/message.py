@@ -6,7 +6,7 @@ from bson import ObjectId
 class Message(BaseModel):
     chat_id: str
     sender_id: str
-    content: str
+    message: str
     timestamp: datetime
 
     class Config:

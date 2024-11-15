@@ -1,5 +1,5 @@
 from pydantic import BaseModel
 
 
-class ChatCreate(BaseModel):
+class CreateChatRequest(BaseModel):
     uid: str

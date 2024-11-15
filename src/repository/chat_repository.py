@@ -34,7 +34,7 @@ class ChatRepository:
 
     async def get_my_chats(self, uid: str):
         return await self.chat_collection.find(
-            {"participants": {"$in": [uid]}, "messages": {"$ne": []}}
+            {"participants": {"$in": [uid]}, "last_message": {"$ne": None}}
         ).to_list(length=100)
 
     async def get_chat_messages(self, chat_id: str) -> List[dict]:
@@ -45,7 +45,6 @@ class ChatRepository:
             return []
 
         chat_id = chat.get("_id")
-        logger.debug(f"Chat id: {chat_id}")
 
         messages = await self.message_collection.find(
             {"chat_id": str(chat_id)}, {"_id": 0}

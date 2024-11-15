@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Dict
 from fastapi import WebSocket, status
@@ -7,6 +8,8 @@ from config.settings import logger
 from external.twitsnap_service import twitsnap_service
 from models.message import Message
 from exceptions.resource_not_found_exception import ResourceNotFoundException
+from fastapi.websockets import WebSocketDisconnect
+from exceptions.bad_request_exception import BadRequestException
 
 
 class ChatService:
@@ -20,8 +23,23 @@ class ChatService:
 
     def remove_connection(self, user_id: str):
         del self.active_connections[user_id]
-
+    
+    async def manage_connection(self, websocket: WebSocket, user_id: str):
+        self.add_connection(user_id, websocket)
+        try:
+            while True:
+                data = await websocket.receive_text()
+                logger.debug(f"Data received: {data}")
+                message = json.loads(data)
+                await self.broadcast_message(user_id, message)
+        except WebSocketDisconnect:
+            logger.debug(f"User {user_id} disconnected")
+            self.remove_connection(user_id)
+        
     async def create_chat(self, uid_1: str, uid_2: str):
+        if uid_1 == uid_2:
+            raise BadRequestException(detail="Cannot create chat with yourself")
+
         existing_chat = await self.chat_repository.get_chat_by_participants(
             uid_1, uid_2
         )
@@ -40,12 +58,11 @@ class ChatService:
 
     async def update_chat(self, chat_id: str, message_id: str):
         return await self.chat_repository.update_chat(chat_id, message_id)
-
+    
     async def broadcast_message(self, sender_id: str, message: dict):
         logger.debug(f"active connections: {self.active_connections.keys()}")
 
         chat = await self.create_chat(sender_id, message.get("receiver_id"))
-        logger.debug(f"Chat created: {chat}")
         chat_id = chat.get("chat_id")
         message["sender_id"] = sender_id
         message["chat_id"] = chat_id
@@ -54,7 +71,7 @@ class ChatService:
             Message(
                 chat_id=str(chat.get("chat_id")),
                 sender_id=sender_id,
-                content=message.get("message"),
+                message=message.get("message"),
                 timestamp=datetime.now(),
             )
         )
@@ -65,9 +82,10 @@ class ChatService:
         if result.modified_count == 0:
             logger.debug(f"Chat not updated: {result}")
 
+        logger.debug(f"Broadcasting message: {message}")
         for user_id, websocket in self.active_connections.items():
             if user_id == sender_id or user_id == message.get("receiver_id"):
-                # logger.debug(f"Sending message to user {user_id}, message: {message}")
+                logger.debug(f"sending message to user {user_id}")
                 await websocket.send_json(message)
 
     async def _get_chat_by_id(self, chat_id: str):
@@ -77,6 +95,7 @@ class ChatService:
         return chat
 
     async def get_chat_by_id(self, chat_id: str):
+        logger.debug(f"Getting messages for chat {chat_id}")
         chat = await self.chat_repository.get_chat_by_id(chat_id)
         msg = await self.chat_repository.get_chat_messages(chat_id)
         res = {"chat_id": chat_id, "messages": msg}
@@ -86,23 +105,27 @@ class ChatService:
     async def get_my_chats(self, user_id: str):
         res = {"chats": []}
         chats = await self.chat_repository.get_my_chats(user_id)
-
+        logger.debug(f"Chats found: {chats}")
         for chat in chats:
             chat["chat_id"] = str(chat.get("_id"))
             chat["participants"].remove(user_id)
-            # user = await self.twitsnap_service.get_user(chat.get("participants")[0])
+            user = await self.twitsnap_service.get_user(chat.get("participants")[0])
             last_message = await self.chat_repository.get_message_by_id(
                 chat.get("last_message")
             )
             res["chats"].append(
                 {
                     "chat_id": str(chat.get("_id")),
-                    # "user": user,
+                    "user": {
+                        "uid": user.get("uid"),
+                        "username": user.get("username"),
+                        "photo": user.get("photo"),
+                    },
                     "last_message": last_message,
                 }
             )
         logger.debug(f"returning chats: {res}")
         return res
 
-
+    
 chat_service = ChatService(chat_repository, twitsnap_service)
