@@ -94,17 +94,16 @@ class ChatService:
             raise ResourceNotFoundException("Chat not found")
         return chat
 
-    async def get_chat_by_id(self, chat_id: str):
+    async def get_chat_by_id(self, chat_id: str, limit: int, offset: int):
         logger.debug(f"Getting messages for chat {chat_id}")
-        chat = await self.chat_repository.get_chat_by_id(chat_id)
-        msg = await self.chat_repository.get_chat_messages(chat_id)
+        msg = await self.chat_repository.get_chat_messages(chat_id, limit, offset)
         res = {"chat_id": chat_id, "messages": msg}
-        logger.debug(f"returning chat: {res}")
+        logger.debug(f"return chat: {res}")
         return res
 
-    async def get_my_chats(self, user_id: str):
+    async def get_my_chats(self, user_id: str, limit: int, offset: int):
         res = {"chats": []}
-        chats = await self.chat_repository.get_my_chats(user_id)
+        chats = await self.chat_repository.get_my_chats(user_id, limit, offset)
         for chat in chats:
             chat["chat_id"] = str(chat.get("_id"))
             chat["participants"].remove(user_id)
@@ -123,7 +122,7 @@ class ChatService:
                     "last_message": last_message,
                 }
             )
-        logger.debug(f"returning chats: {res}")
+        logger.debug(f"return chats: {res}")
         return res
 
 

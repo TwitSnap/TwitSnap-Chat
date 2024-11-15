@@ -1,5 +1,5 @@
 import json
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Request, Query
 from config.settings import logger
 from service.chat_service import chat_service
 from exceptions.bad_request_exception import BadRequestException
@@ -33,18 +33,18 @@ async def create_chat(req: Request, create_chat_request: CreateChatRequest):
 
 
 @chat_router.get("/{chat_id}")
-async def get_chat_by_id(chat_id: str):
+async def get_chat_by_id(chat_id: str, limit: int = Query(10, le=100), offset: int = Query(0,ge=0)):
     try:
-        return await chat_service.get_chat_by_id(chat_id)
+        return await chat_service.get_chat_by_id(chat_id, limit, offset)
     except Exception as e:
         return ExceptionHandler.handle_exception(e)
 
 
 @chat_router.get("/")
-async def get_my_chats(req: Request):
+async def get_my_chats(req: Request, limit: int = Query(10,le=100), offset: int = Query(0,ge=0)):
     try:
         my_user_id = get_current_user(req)
-        return await chat_service.get_my_chats(my_user_id)
+        return await chat_service.get_my_chats(my_user_id, limit, offset)
     except Exception as e:
         return ExceptionHandler.handle_exception(e)
 

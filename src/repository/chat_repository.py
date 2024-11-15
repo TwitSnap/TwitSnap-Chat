@@ -6,7 +6,7 @@ from config.database import db
 from config.settings import logger
 from typing import List
 from bson import ObjectId
-
+from datetime import datetime
 
 class ChatRepository:
     def __init__(self, db):
@@ -16,6 +16,8 @@ class ChatRepository:
 
     def create_index(self):
         self.chat_collection.create_index([("participants", 1)])
+        self.chat_collection.create_index([("last_updated", -1)])
+        self.message_collection.create_index([("timestamp",-1)])
         self.message_collection.create_index([("chat_id", 1)])
 
     async def create_chat(self, uid_1: str, uid_2: str):
@@ -29,7 +31,7 @@ class ChatRepository:
 
     async def update_chat(self, chat_id: str, message_id: str):
         return await self.chat_collection.update_one(
-            {"_id": ObjectId(chat_id)}, {"$set": {"last_message": ObjectId(message_id)}}
+            {"_id": ObjectId(chat_id)}, {"$set": {"last_message": ObjectId(message_id), "last_updated": datetime.now()}}
         )
 
     async def get_chat_by_participants(self, uid_1: str, uid_2: str):
@@ -37,23 +39,20 @@ class ChatRepository:
             {"participants": {"$all": [uid_1, uid_2]}}
         )
 
-    async def get_my_chats(self, uid: str):
-        return await self.chat_collection.find(
-            {"participants": {"$in": [uid]}, "last_message": {"$ne": None}}
-        ).to_list(length=100)
+    async def get_my_chats(self, uid: str, limit: int, offset: int):
+        return await (self.chat_collection.find(
+            {"participants": {"$in": [uid]}, "last_message": {"$ne": None}})
+                      .sort("last_update", -1)
+                      .skip(offset)
+                      .limit(limit)
+                      .to_list(length=limit))
 
-    async def get_chat_messages(self, chat_id: str) -> List[dict]:
-        chat = await self.chat_collection.find_one({"_id": ObjectId(chat_id)})
-
-        if not chat:
-            logger.debug("Chat not found")
-            return []
-
-        chat_id = chat.get("_id")
-
-        messages = await self.message_collection.find(
-            {"chat_id": str(chat_id)}, {"_id": 0}
-        ).to_list(length=100)
+    async def get_chat_messages(self, chat_id: str,limit: int, offset: int)-> List[dict]:
+        messages = await (self.message_collection.find({"chat_id": chat_id}, {"_id": 0, "chat_id": 0})
+                          .sort("timestamp", -1)
+                          .skip(offset)
+                          .limit(limit)
+                          .to_list(length=limit))
         return messages
 
     async def get_chat_by_id(self, chat_id: str):
