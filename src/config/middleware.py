@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.requests import Request
 from config.settings import logger
 
+
 def configure_middleware(app: FastAPI):
     app.add_middleware(
         CORSMiddleware,

@@ -14,6 +14,10 @@ class ChatRepository:
         self.chat_collection = db.get_collection("chats")
         self.message_collection = db.get_collection("messages")
 
+    def create_index(self):
+        self.chat_collection.create_index([("participants", 1)])
+        self.message_collection.create_index([("chat_id", 1)])
+
     async def create_chat(self, uid_1: str, uid_2: str):
         new_chat = Chat(participants=[uid_1, uid_2], messages=[])
         result = await self.chat_collection.insert_one(new_chat.dict())
@@ -27,6 +31,7 @@ class ChatRepository:
         return await self.chat_collection.update_one(
             {"_id": ObjectId(chat_id)}, {"$set": {"last_message": ObjectId(message_id)}}
         )
+
     async def get_chat_by_participants(self, uid_1: str, uid_2: str):
         return await self.chat_collection.find_one(
             {"participants": {"$all": [uid_1, uid_2]}}
@@ -61,4 +66,5 @@ class ChatRepository:
         )
 
 
-chat_repository = ChatRepository(db.get_db())
+chat_repository = ChatRepository(db)
+chat_repository.create_index()

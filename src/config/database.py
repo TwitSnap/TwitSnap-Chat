@@ -16,6 +16,7 @@ class Database:
         try:
             self.client.admin.command("ping")
             logger.info(f"Database connection established successfully at {self.uri}")
+            return self.db
         except Exception as e:
             print(e)
 
@@ -32,4 +33,4 @@ class Database:
 
 
 db = Database(DB_URI, DB_NAME)
-db.connect()
+db = db.connect()

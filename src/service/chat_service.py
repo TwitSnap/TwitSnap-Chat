@@ -23,7 +23,7 @@ class ChatService:
 
     def remove_connection(self, user_id: str):
         del self.active_connections[user_id]
-    
+
     async def manage_connection(self, websocket: WebSocket, user_id: str):
         self.add_connection(user_id, websocket)
         try:
@@ -35,7 +35,7 @@ class ChatService:
         except WebSocketDisconnect:
             logger.debug(f"User {user_id} disconnected")
             self.remove_connection(user_id)
-        
+
     async def create_chat(self, uid_1: str, uid_2: str):
         if uid_1 == uid_2:
             raise BadRequestException(detail="Cannot create chat with yourself")
@@ -58,7 +58,7 @@ class ChatService:
 
     async def update_chat(self, chat_id: str, message_id: str):
         return await self.chat_repository.update_chat(chat_id, message_id)
-    
+
     async def broadcast_message(self, sender_id: str, message: dict):
         logger.debug(f"active connections: {self.active_connections.keys()}")
 
@@ -105,7 +105,6 @@ class ChatService:
     async def get_my_chats(self, user_id: str):
         res = {"chats": []}
         chats = await self.chat_repository.get_my_chats(user_id)
-        logger.debug(f"Chats found: {chats}")
         for chat in chats:
             chat["chat_id"] = str(chat.get("_id"))
             chat["participants"].remove(user_id)
@@ -127,5 +126,5 @@ class ChatService:
         logger.debug(f"returning chats: {res}")
         return res
 
-    
+
 chat_service = ChatService(chat_repository, twitsnap_service)

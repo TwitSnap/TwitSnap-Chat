@@ -7,15 +7,20 @@ from dtos.create_chat import CreateChatRequest
 from exceptions.exception_handler import ExceptionHandler
 
 chat_router = APIRouter()
+
+
 @chat_router.websocket("/web_socket/{user_id}")
 async def websocket(websocket: WebSocket, user_id: str):
     try:
-        logger.debug(f" attempting to establish WebSocket connection for user {user_id}")
+        logger.debug(
+            f" attempting to establish WebSocket connection for user {user_id}"
+        )
         await websocket.accept()
         logger.debug(f"WebSocket connection established for user {user_id}")
         await chat_service.manage_connection(websocket, user_id)
     except Exception as e:
         return ExceptionHandler.handle_exception(e)
+
 
 @chat_router.post("/")
 async def create_chat(req: Request, create_chat_request: CreateChatRequest):
@@ -26,12 +31,14 @@ async def create_chat(req: Request, create_chat_request: CreateChatRequest):
     except Exception as e:
         ExceptionHandler.handle_exception(e)
 
+
 @chat_router.get("/{chat_id}")
 async def get_chat_by_id(chat_id: str):
     try:
         return await chat_service.get_chat_by_id(chat_id)
     except Exception as e:
         return ExceptionHandler.handle_exception(e)
+
 
 @chat_router.get("/")
 async def get_my_chats(req: Request):
@@ -40,6 +47,7 @@ async def get_my_chats(req: Request):
         return await chat_service.get_my_chats(my_user_id)
     except Exception as e:
         return ExceptionHandler.handle_exception(e)
+
 
 def get_current_user(req: Request):
     user_id = req.headers.get("user_id")
