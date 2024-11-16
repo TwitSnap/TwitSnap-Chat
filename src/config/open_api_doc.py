@@ -34,7 +34,7 @@ websocket_doc = """
     WebSocket 
 
     ### Conexión
-    - Conectar a `wss://<host>/web_socket/{user_id}` donde `user_id` es del usuario logeado.
+    - Conectar a `wss://<host>/api/v1/web_socket`
 
     ### Formato de los mensajes
 

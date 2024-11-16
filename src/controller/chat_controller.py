@@ -9,8 +9,10 @@ from exceptions.exception_handler import ExceptionHandler
 chat_router = APIRouter()
 
 
-@chat_router.websocket("/web_socket/{user_id}")
-async def websocket(websocket: WebSocket, user_id: str):
+@chat_router.websocket("/web_socket")
+async def websocket(websocket: WebSocket):
+    user_id = websocket.headers.get("user_id")
+    logger.debug(f"User id found in headers: {user_id}")
     try:
         logger.debug(
             f" attempting to establish WebSocket connection for user {user_id}"
