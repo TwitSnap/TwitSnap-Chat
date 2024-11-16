@@ -1,12 +1,13 @@
 from fastapi.openapi.utils import get_openapi
 
+
 def configure_openapi(app):
     def custom_openapi():
         if app.openapi_schema:
             return app.openapi_schema
         openapi_schema = get_openapi(
             title="Twit-Snap Chat Service",
-            description= websocket_doc,
+            description=websocket_doc,
             version="1.0.0",
             routes=app.routes,
         )
@@ -34,7 +35,7 @@ websocket_doc = """
     WebSocket 
 
     ### Conexión
-    - Conectar a `wss://<host>/api/v1/web_socket`
+    - Conectar a `wss://<host>/api/v1/chats/websocket`
 
     ### Formato de los mensajes
 
@@ -42,7 +43,7 @@ websocket_doc = """
     - Los mensajes deben ser enviados en formato JSON con la siguiente estructura:
       ```json
       {
-          "receiver_id": "1234",
+          "receiver_id": "1234", 
           "message": "Hola"
       }
       ```

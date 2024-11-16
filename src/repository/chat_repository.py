@@ -8,6 +8,7 @@ from typing import List
 from bson import ObjectId
 from datetime import datetime
 
+
 class ChatRepository:
     def __init__(self, db):
         self.db = db
@@ -17,11 +18,11 @@ class ChatRepository:
     def create_index(self):
         self.chat_collection.create_index([("participants", 1)])
         self.chat_collection.create_index([("last_updated", -1)])
-        self.message_collection.create_index([("timestamp",-1)])
+        self.message_collection.create_index([("timestamp", -1)])
         self.message_collection.create_index([("chat_id", 1)])
 
-    async def create_chat(self, uid_1: str, uid_2: str):
-        new_chat = Chat(participants=[uid_1, uid_2], messages=[])
+    async def create_chat(self, my_user: str, other_user: str):
+        new_chat = Chat(participants=[my_user, other_user], messages=[])
         result = await self.chat_collection.insert_one(new_chat.dict())
         return await self.chat_collection.find_one({"_id": result.inserted_id})
 
@@ -31,7 +32,13 @@ class ChatRepository:
 
     async def update_chat(self, chat_id: str, message_id: str):
         return await self.chat_collection.update_one(
-            {"_id": ObjectId(chat_id)}, {"$set": {"last_message": ObjectId(message_id), "last_updated": datetime.now()}}
+            {"_id": ObjectId(chat_id)},
+            {
+                "$set": {
+                    "last_message": ObjectId(message_id),
+                    "last_updated": datetime.now(),
+                }
+            },
         )
 
     async def get_chat_by_participants(self, uid_1: str, uid_2: str):
@@ -40,19 +47,40 @@ class ChatRepository:
         )
 
     async def get_my_chats(self, uid: str, limit: int, offset: int):
-        return await (self.chat_collection.find(
-            {"participants": {"$in": [uid]}, "last_message": {"$ne": None}})
-                      .sort("last_update", -1)
-                      .skip(offset)
-                      .limit(limit)
-                      .to_list(length=limit))
+        logger.debug(f"uid type: {type(uid)}")
+        logger.debug(f"offset value: {offset}, limit value: {limit}")
+        logger.debug(f"Getting chats for user {uid}")
+        return await (
+            self.chat_collection.find(
+                {"participants": {"$in": [uid]}, "last_message": {"$ne": None}}
+            )
+            .sort("last_updated", -1)
+            .skip(offset)
+            .limit(limit)
+            .to_list(length=limit)
+        )
 
-    async def get_chat_messages(self, chat_id: str,limit: int, offset: int)-> List[dict]:
-        messages = await (self.message_collection.find({"chat_id": chat_id}, {"_id": 0, "chat_id": 0})
-                          .sort("timestamp", -1)
-                          .skip(offset)
-                          .limit(limit)
-                          .to_list(length=limit))
+    async def get_chat_messages(
+        self, chat_id: str, limit: int, cursor: str
+    ) -> List[dict]:
+        if cursor is None:
+            messages = await (
+                self.message_collection.find(
+                    {"chat_id": chat_id}
+                )
+                .sort("timestamp", -1)
+                .limit(limit)
+                .to_list(length=limit)
+            )
+        else:
+            messages = await (
+                self.message_collection.find(
+                    {"chat_id": chat_id, "_id": {"$lt": ObjectId(cursor)}},
+                    {"chat_id": 0},
+                )
+                .limit(limit)
+                .to_list(length=limit)
+            )
         return messages
 
     async def get_chat_by_id(self, chat_id: str):
@@ -60,8 +88,7 @@ class ChatRepository:
 
     async def get_message_by_id(self, message_id: str):
         return await self.message_collection.find_one(
-            {"_id": ObjectId(message_id)},
-            {"_id": 0, "chat_id": 0},
+            {"_id": ObjectId(message_id)}
         )
 
 
