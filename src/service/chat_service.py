@@ -44,7 +44,10 @@ class ChatService:
             self.remove_connection(user_id, device_id)
 
     async def create_chat(self, my_user: str, other_user: str):
-        verify_other_user = self.twitsnap_service.get_user(other_user)
+        verify_other_user = await self.twitsnap_service.get_user(other_user)
+        if verify_other_user is None:
+            raise ResourceNotFoundException(detail="User not found")
+
         if my_user == other_user:
             raise BadRequestException(detail="Cannot create chat with yourself")
 
@@ -70,6 +73,10 @@ class ChatService:
         return await self.chat_repository.update_chat(chat_id, message_id)
 
     async def broadcast_message(self, sender_id: str, message: dict):
+        verify_user = await twitsnap_service.get_user(message.get("receiver_id"))
+        if verify_user is None:
+            logger.debug(f"websocket: user {message.get('receiver_id')} not found")
+            return
         chat = await self.create_chat(sender_id, message.get("receiver_id"))
         chat_id = chat.id
         message["sender_id"] = sender_id
@@ -84,7 +91,7 @@ class ChatService:
             )
         )
         logger.debug(f"Message created: {msg}")
-
+        message['id'] = str(msg.get("_id"))
         result = await self.update_chat(chat_id, msg.get("_id"))
 
         if result.modified_count == 0:

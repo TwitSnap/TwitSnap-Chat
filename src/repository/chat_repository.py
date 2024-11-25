@@ -47,7 +47,6 @@ class ChatRepository:
         )
 
     async def get_my_chats(self, uid: str, limit: int, offset: int):
-        logger.debug(f"uid type: {type(uid)}")
         logger.debug(f"offset value: {offset}, limit value: {limit}")
         logger.debug(f"Getting chats for user {uid}")
         return await (
