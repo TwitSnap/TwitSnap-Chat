@@ -73,10 +73,12 @@ class ChatService:
         return await self.chat_repository.update_chat(chat_id, message_id)
 
     async def broadcast_message(self, sender_id: str, message: dict):
-        verify_user = await twitsnap_service.get_user(message.get("receiver_id"))
-        if verify_user is None:
+        my_user = await twitsnap_service.get_user(sender_id)
+        receiver_user = await twitsnap_service.get_user(message.get("receiver_id"))
+        if receiver_user is None:
             logger.debug(f"websocket: user {message.get('receiver_id')} not found")
             return
+
         chat = await self.create_chat(sender_id, message.get("receiver_id"))
         chat_id = chat.id
         message["sender_id"] = sender_id
@@ -104,6 +106,11 @@ class ChatService:
                 for device_id, websocket in self.active_connections[user_id].items():
                     await websocket.send_json(message)
         logger.debug(f"Message broadcasted")
+
+        if receiver_user.get("uid") not in chat.participants:
+            logger.debug(f"Sending push notification to {receiver_user.get('uid')}")
+            await self.twitsnap_service.send_new_message_notification(my_user.get("username"), receiver_user.get("device_token"))
+
     async def _get_chat_by_id(self, chat_id: str):
         chat = await self.chat_repository.get_chat_by_id(chat_id)
         if chat is None:

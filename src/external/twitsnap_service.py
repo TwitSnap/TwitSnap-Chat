@@ -20,5 +20,21 @@ class TwitsnapService:
             return None
         return response.json()
 
+    async def send_new_message_notification(self, username: str, device_token: list[str]):
+        url = NOTIFICATION_API_URI + NOTIFICATION_API_SEND_PATH
+        req = Notification(
+            type="push",
+            params={"title": "notificacion push nuevo mensaje directo",
+                    "body": f"{username} te envio un mensaje directo"},
+            notifications={"type": "push", "destinations": device_token},
+        )
+        logger.debug(
+            f"[NotificationService] - Attempting to send new direct message to {username} with data: {req.model_dump()}"
+        )
+        res = await self.requester.post(url, json_body=req.model_dump())
+        logger.debug(
+            f"[NotificationService] - Attempt to send new follower notification - response: {res.text}"
+        )
+
 
 twitsnap_service = TwitsnapService(requester)
