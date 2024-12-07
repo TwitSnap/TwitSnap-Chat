@@ -6,3 +6,4 @@ __pycache__
 test_main.http
 client1.html
 client2.html
+check.py
