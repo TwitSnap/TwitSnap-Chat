@@ -7,6 +7,9 @@ from config.settings import (
 
 from exceptions.resource_not_found_exception import ResourceNotFoundException
 
+from config.settings import NOTIFICATION_API_URI, NOTIFICATION_API_SEND_PATH
+from dtos.notification import Notification
+
 
 class TwitsnapService:
     def __init__(self, requester):
@@ -24,17 +27,19 @@ class TwitsnapService:
         url = NOTIFICATION_API_URI + NOTIFICATION_API_SEND_PATH
         req = Notification(
             type="push",
-            params={"title": "notificacion push nuevo mensaje directo",
+            params={"title": "Has recibido un mensaje directo",
                     "body": f"{username} te envio un mensaje directo"},
             notifications={"type": "push", "destinations": device_token},
         )
         logger.debug(
             f"[NotificationService] - Attempting to send new direct message to {username} with data: {req.model_dump()}"
         )
+
         res = await self.requester.post(url, json_body=req.model_dump())
         logger.debug(
-            f"[NotificationService] - Attempt to send new follower notification - response: {res.text}"
+            f"[NotificationService] - Attempt to send new direct message to {username} - response: {res.text}"
         )
+
 
 
 twitsnap_service = TwitsnapService(requester)

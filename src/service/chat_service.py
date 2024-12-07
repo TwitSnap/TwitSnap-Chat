@@ -14,6 +14,7 @@ from exceptions.bad_request_exception import BadRequestException
 from dtos.chat import Chat
 from dtos.chat_messages_response import ChatMessagesResponse
 from dtos.message import MessageResponse
+from exceptions.exception_handler import ExceptionHandler
 
 
 class ChatService:
@@ -107,9 +108,11 @@ class ChatService:
                     await websocket.send_json(message)
         logger.debug(f"Message broadcasted")
 
-        # if receiver_user.get("uid") not in chat.participants:
-        logger.debug(f"Sending push notification to {receiver_user.get('uid')}")
-        await self.twitsnap_service.send_new_message_notification(my_user.get("username"), receiver_user.get("device_token"))
+        try:
+            logger.debug(f"Sending push notification to {receiver_user.get('uid')}")
+            await self.twitsnap_service.send_new_message_notification(my_user.get("username"), receiver_user.get("device_token"))
+        except Exception as e:
+            ExceptionHandler.handle_exception(e)
 
     async def _get_chat_by_id(self, chat_id: str):
         chat = await self.chat_repository.get_chat_by_id(chat_id)
