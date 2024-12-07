@@ -107,9 +107,9 @@ class ChatService:
                     await websocket.send_json(message)
         logger.debug(f"Message broadcasted")
 
-        if receiver_user.get("uid") not in chat.participants:
-            logger.debug(f"Sending push notification to {receiver_user.get('uid')}")
-            await self.twitsnap_service.send_new_message_notification(my_user.get("username"), receiver_user.get("device_token"))
+        # if receiver_user.get("uid") not in chat.participants:
+        logger.debug(f"Sending push notification to {receiver_user.get('uid')}")
+        await self.twitsnap_service.send_new_message_notification(my_user.get("username"), receiver_user.get("device_token"))
 
     async def _get_chat_by_id(self, chat_id: str):
         chat = await self.chat_repository.get_chat_by_id(chat_id)
